@@ -2,7 +2,7 @@
 #define UKF_H
 #include "Eigen/Dense"
 #include "measurement_package.h"
-#include "ground_truth_package.h"
+//#include "ground_truth_package.h"
 #include <vector>
 
 using Eigen::MatrixXd;
@@ -106,6 +106,13 @@ public:
    * @param meas_package The measurement at k+1
    */
   void UpdateRadar(MeasurementPackage meas_package);
+
+  MatrixXd GenerateSigmaPoints();
+  MatrixXd AugmentedSigmaPoints();
+  MatrixXd SigmaPointPrediction(MatrixXd Xsig_aug, double delta_t);
+
+
+
 };
 
 #endif /* UKF_H */
