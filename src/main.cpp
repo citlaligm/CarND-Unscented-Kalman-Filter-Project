@@ -139,13 +139,17 @@ int main(int argc, char* argv[]) {
       out_file_ << measurement_pack_list[k].raw_measurements_(0) << "\t";
 
       // p2 - meas
-      out_file_ << measurement_pack_list[k].raw_measurements_(1) << "\t";
+      out_file_ << measurement_pack_list[k].raw_measurements_(1) << "\t\n";
+
     } else if (measurement_pack_list[k].sensor_type_ == MeasurementPackage::RADAR) {
       // output the estimation in the cartesian coordinates
       float ro = measurement_pack_list[k].raw_measurements_(0);
       float phi = measurement_pack_list[k].raw_measurements_(1);
-      out_file_ << ro * cos(phi) << "\t"; // p1_meas
-      out_file_ << ro * sin(phi) << "\t"; // p2_meas
+      float p1_meas = ro * cos(phi);
+      float p2_meas = ro * sin(phi);
+
+      out_file_ << p1_meas<< "\t"; // p1_meas
+      out_file_ << p2_meas<< "\t\n"; // p2_meas
     }
   }
 

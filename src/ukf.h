@@ -4,6 +4,12 @@
 #include "measurement_package.h"
 //#include "ground_truth_package.h"
 #include <vector>
+#include <math.h>
+#include <fstream>
+#include <sstream>
+#include <stdlib.h>
+#include <iostream>
+
 
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
