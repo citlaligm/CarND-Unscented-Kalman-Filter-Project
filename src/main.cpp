@@ -4,7 +4,8 @@
 #include <vector>
 #include "ukf.h"
 #include "measurement_package.h"
-//#include "ground_truth_package.h"
+#include "ground_truth_package.h"
+#include "tools.h"
 #include <fstream>
 #include <sstream>
 #include <stdlib.h>
@@ -67,6 +68,7 @@ int main(int argc, char* argv[]) {
    **********************************************/
 
   vector<MeasurementPackage> measurement_pack_list;
+  vector<GroundTruthPackage> gt_pack_list;
   string line;
 
   // prep the measurement packages (each line represents a measurement at a
@@ -74,6 +76,7 @@ int main(int argc, char* argv[]) {
   while (getline(in_file_, line)) {
     string sensor_type;
     MeasurementPackage meas_package;
+    GroundTruthPackage gt_package;
     istringstream iss(line);
     long timestamp;
 
@@ -111,10 +114,32 @@ int main(int argc, char* argv[]) {
       meas_package.timestamp_ = timestamp;
       measurement_pack_list.push_back(meas_package);
     }
+    // read ground truth data to compare later
+    float x_gt;
+    float y_gt;
+    float v_gt;
+    float yaw_gt;
+    float yawr_gt;
+    iss >> x_gt;
+    iss >> y_gt;
+    iss >> v_gt;
+    iss >> yaw_gt;
+    iss >> yawr_gt;
+    gt_package.gt_values_ = VectorXd(5);
+
+
+    //TODO: Change zeros for real values
+    gt_package.gt_values_ << x_gt, y_gt, v_gt, yaw_gt,yawr_gt;
+    gt_pack_list.push_back(gt_package);
+
+
   }
 
   // Create a UKF instance
   UKF ukf;
+  // used to compute the RMSE later
+  vector<VectorXd> estimations;
+  vector<VectorXd> ground_truth;
 
   size_t number_of_measurements = measurement_pack_list.size();
 
@@ -139,7 +164,7 @@ int main(int argc, char* argv[]) {
       out_file_ << measurement_pack_list[k].raw_measurements_(0) << "\t";
 
       // p2 - meas
-      out_file_ << measurement_pack_list[k].raw_measurements_(1) << "\t\n";
+      out_file_ << measurement_pack_list[k].raw_measurements_(1) << "\t";
 
     } else if (measurement_pack_list[k].sensor_type_ == MeasurementPackage::RADAR) {
       // output the estimation in the cartesian coordinates
@@ -149,9 +174,41 @@ int main(int argc, char* argv[]) {
       float p2_meas = ro * sin(phi);
 
       out_file_ << p1_meas<< "\t"; // p1_meas
-      out_file_ << p2_meas<< "\t\n"; // p2_meas
+      out_file_ << p2_meas<< "\t"; // p2_meas
     }
+    // output the ground truth packages
+    out_file_ << gt_pack_list[k].gt_values_(0) << "\t";
+    out_file_ << gt_pack_list[k].gt_values_(1) << "\t";
+    out_file_ << gt_pack_list[k].gt_values_(2) << "\t";
+    out_file_ << gt_pack_list[k].gt_values_(3) << "\t";
+
+    //TODO: Insert real values for yawrate, v1 and v2
+    out_file_ << gt_pack_list[k].gt_values_(4) << "\t";
+    float v1_gt = sin(float(gt_pack_list[k].gt_values_(3)));
+    float v2_gt = cos(float(gt_pack_list[k].gt_values_(3)));
+    out_file_ << v1_gt << "\t";
+    out_file_ << v2_gt << "\t";
+
+    //NIS
+    if(measurement_pack_list[k].sensor_type_ == MeasurementPackage::LASER){
+    	out_file_ << ukf.NIS_laser_ << "\t"; // NIS Laser
+    	out_file_ << ukf.NIS_radar_ << "\n";
+    }
+    else{
+    	out_file_ << ukf.NIS_laser_ << "\t"; // NIS Laser
+    	out_file_ << ukf.NIS_radar_ << "\n";
+    }
+
+    estimations.push_back(ukf.x_);
+    ground_truth.push_back(gt_pack_list[k].gt_values_);
+
+
+
   }
+  // compute the accuracy (RMSE)
+  Tools tools;
+  cout << "\nAccuracy - RMSE:" << endl << tools.CalculateRMSE(estimations, ground_truth) << endl;
+
 
   // close files
   if (out_file_.is_open()) {
