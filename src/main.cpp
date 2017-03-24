@@ -9,6 +9,12 @@
 #include <fstream>
 #include <sstream>
 #include <stdlib.h>
+#include <iostream>
+#include <string>
+#include <iomanip>
+
+
+
 
 using namespace std;
 using Eigen::MatrixXd;
@@ -117,21 +123,19 @@ int main(int argc, char* argv[]) {
     // read ground truth data to compare later
     float x_gt;
     float y_gt;
-    float v_gt;
-    float yaw_gt;
-    float yawr_gt;
+    float vx_gt;
+    float vy_gt;
     iss >> x_gt;
     iss >> y_gt;
-    iss >> v_gt;
-    iss >> yaw_gt;
-    iss >> yawr_gt;
+    iss >> vx_gt;
+    iss >> vy_gt;
 
 
-    gt_package.gt_values_ = VectorXd(5);
+    gt_package.gt_values_ = VectorXd(4);
 
 
     //TODO: Change zeros for real values
-    gt_package.gt_values_ << x_gt, y_gt, v_gt, yaw_gt,yawr_gt;
+    gt_package.gt_values_ << x_gt, y_gt,vx_gt, vy_gt;
     gt_pack_list.push_back(gt_package);
 
 
@@ -181,15 +185,17 @@ int main(int argc, char* argv[]) {
     // output the ground truth packages
     out_file_ << gt_pack_list[k].gt_values_(0) << "\t";
     out_file_ << gt_pack_list[k].gt_values_(1) << "\t";
-    out_file_ << gt_pack_list[k].gt_values_(2) << "\t";
-    out_file_ << gt_pack_list[k].gt_values_(3) << "\t";
 
-    //TODO: Insert real values for yawrate, v1 and v2
-    out_file_ << gt_pack_list[k].gt_values_(4) << "\t";
-    float v1_gt = sin(float(gt_pack_list[k].gt_values_(3)));
-    float v2_gt = cos(float(gt_pack_list[k].gt_values_(3)));
-    out_file_ << v1_gt << "\t";
-    out_file_ << v2_gt << "\t";
+    //Velocity ground truth
+    float v = sqrt(double(gt_pack_list[k].gt_values_(2)*gt_pack_list[k].gt_values_(2)+ gt_pack_list[k].gt_values_(3)*gt_pack_list[k].gt_values_(3)));
+    out_file_ <<v<<"\t";
+
+    //Yaw angle ground truth
+
+    double yaw = atan2(double(gt_pack_list[k].gt_values_(3)),double(gt_pack_list[k].gt_values_(2)));
+    out_file_ << yaw << "\t";
+
+
 
     //NIS
     if(measurement_pack_list[k].sensor_type_ == MeasurementPackage::LASER){
@@ -209,7 +215,7 @@ int main(int argc, char* argv[]) {
   }
   // compute the accuracy (RMSE)
   Tools tools;
-  cout << "\nAccuracy - RMSE:" << endl << tools.CalculateRMSE(estimations, ground_truth) << endl;
+  cout << "\nAccuracy - RMSE:" << endl << fixed << setprecision(2) << tools.CalculateRMSE(estimations, ground_truth) << endl;
 
 
   // close files
