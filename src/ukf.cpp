@@ -26,10 +26,10 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 2;
+  std_a_ = 3;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 0.48;
+  std_yawdd_ = 3;
 
   // Laser measurement noise standard deviation position1 in m
   std_laspx_ = 0.15;
@@ -76,18 +76,18 @@ UKF::UKF() {
   Xsig_pred_ = MatrixXd(15, 5);
 
   //Initialize P
-//  P_ <<     0.0043,   -0.0013,    0.0030,   -0.0022,   -0.0020,
-//           -0.0013,    0.0077,    0.0011,    0.0071,    0.0060,
-//            0.0030,    0.0011,    0.0054,    0.0007,    0.0008,
-//            -0.0022,    0.0071,    0.0007,    0.0098,    0.0100,
-//            -0.0020,    0.0060,    0.0008,    0.0100,    0.0123;
+  P_ <<     0.0043,   -0.0013,    0.0030,   -0.0022,   -0.0020,
+           -0.0013,    0.0077,    0.0011,    0.0071,    0.0060,
+            0.0030,    0.0011,    0.0054,    0.0007,    0.0008,
+            -0.0022,    0.0071,    0.0007,    0.0098,    0.0100,
+            -0.0020,    0.0060,    0.0008,    0.0100,    0.0123;
 
-
-  P_ <<   1,0,0,0,0,
-		  0,1,0,0,0,
-		  0,0,1000,0,0,
-		  0,0,0,M_PI_2,0,
-		  0,0,0,0,0.1;
+//
+//  P_ <<   1,0,0,0,0,
+//		  0,1,0,0,0,
+//		  0,0,1000,0,0,
+//		  0,0,0,M_PI_2,0,
+//		  0,0,0,0,0.1;
 
 
 }
@@ -122,6 +122,8 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 			x_(3) = 0.1;
 			x_(4) = 0.1;
 			time_us_ = meas_package.timestamp_;
+			std::cout<<"X_initial: \n"<<x_<<"\n";
+
 
 		}
 		else if (meas_package.sensor_type_ == MeasurementPackage::LASER && use_laser_ ) {
@@ -167,14 +169,14 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 
 	  {
 	        //Prediction(delta_t);
-	        while (delta_t > 0.1)
-	         {
-	           Prediction(0.05);
-	           delta_t -= 0.05;
-	         }
+//	        while (delta_t > 0.1)
+//	         {
+//	           Prediction(0.05);
+//	           delta_t -= 0.05;
+//	         }
 
 	         Prediction(delta_t);
-	        UpdateRadar(meas_package);
+	         UpdateRadar(meas_package);
 	      }
 
 	  else return;
@@ -325,7 +327,6 @@ void UKF::Prediction(double delta_t) {
   vector, x_. Predict sigma points, the state, and the state covariance matrix.
   */
   //Obtain sigma points
-
   MatrixXd Xsig = MatrixXd(11, 5);
   MatrixXd Xsig_aug = MatrixXd(15, 7);
 
@@ -376,7 +377,7 @@ void UKF::Prediction(double delta_t) {
     //angle normalization
 
     //x_diff(3) =  x_diff(3) - 2*M_PI * int(x_diff(3)/2*M_PI);
-    x_diff(3) = x_diff(3)- std::ceil(float((x_diff(3)-M_PI)/(2.*M_PI)))*2.*M_PI;
+    x_diff(3) = x_diff(3)- std::ceil(double((x_diff(3)-M_PI)/(2.*M_PI)))*2.*M_PI;
     //while (x_diff(3)> M_PI) x_diff(3)-=2.*M_PI;
     //while (x_diff(3)<-M_PI) x_diff(3)+=2.*M_PI;
 
@@ -390,8 +391,9 @@ void UKF::Prediction(double delta_t) {
   }
   P_ = P_pred;
   x_ = x_pred;
-  //std::cout<<"P_:\n"<<P_<<"\n";
-  //std::cout<<"x_:\n"<<x_<<"\n";
+
+  //std::cout<<"x_predicted:\n"<<x_<<"\n";
+  //std::cout<<"P_predicted:\n"<<P_<<"\n";
 
   }
 
@@ -471,6 +473,7 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
     x_ = x_ + K*(meas_package.raw_measurements_-z_pred);
     P_ = P_ - K*S*K.transpose();
 
+
     NIS_laser_ = ((meas_package.raw_measurements_-z_pred).transpose())*S.inverse()*(meas_package.raw_measurements_-z_pred);
 
 
@@ -539,6 +542,9 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
 
   }
+  	//std::cout<<"Z_sig:\n"<<Zsig <<"\n";
+
+
 
     //mean predicted measurement
     VectorXd z_pred = VectorXd(n_z);
@@ -563,6 +569,9 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
             0, 0,std_radrd_*std_radrd_;
 
     S = S + R;
+    //std::cout<<"z_pred:\n"<<z_pred<<"\n";
+    //std::cout<<"S:\n"<<S<<"\n";
+
 
 
     //create matrix for cross correlation Tc
@@ -588,7 +597,9 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
     x_ = x_ + K*(meas_package.raw_measurements_-z_pred);
     P_ = P_ - K*S*K.transpose();
     NIS_radar_ = ((meas_package.raw_measurements_-z_pred).transpose())*S.inverse()*(meas_package.raw_measurements_-z_pred);
-    //std::cout<<"NIS:\n"<<NIS_laser_<<"\n";
+    //std::cout<<"NIS:\n"<<NIS_radar_<<"\n";
+    //std::cout<<"x:\n"<<x_<<"\n";
+    //std::cout<<"P:\n"<<P_ <<"\n";
 
 
 
