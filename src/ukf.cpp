@@ -26,10 +26,10 @@ UKF::UKF() {
   P_ = MatrixXd(5, 5);
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
-  std_a_ = 3;
+  std_a_ = 2;
 
   // Process noise standard deviation yaw acceleration in rad/s^2
-  std_yawdd_ = 3;
+  std_yawdd_ = 0.55;
 
   // Laser measurement noise standard deviation position1 in m
   std_laspx_ = 0.15;
@@ -81,14 +81,6 @@ UKF::UKF() {
             0.0030,    0.0011,    0.0054,    0.0007,    0.0008,
             -0.0022,    0.0071,    0.0007,    0.0098,    0.0100,
             -0.0020,    0.0060,    0.0008,    0.0100,    0.0123;
-
-//
-//  P_ <<   1,0,0,0,0,
-//		  0,1,0,0,0,
-//		  0,0,1000,0,0,
-//		  0,0,0,M_PI_2,0,
-//		  0,0,0,0,0.1;
-
 
 }
 
@@ -155,12 +147,6 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 
 	  if(meas_package.sensor_type_==MeasurementPackage::LASER && use_laser_ ){
 	        //std::cout<<"Meas:\n"<<x_<<"\n";
-		  while (delta_t > 0.1)
-		   {
-		     Prediction(0.05);
-		     delta_t -= 0.05;
-		   }
-
 		   	Prediction(delta_t);
 	        //Prediction(delta_t);
 	        UpdateLidar(meas_package);
@@ -168,12 +154,6 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 	  else if (meas_package.sensor_type_==MeasurementPackage::RADAR && use_radar_ )
 
 	  {
-	        //Prediction(delta_t);
-//	        while (delta_t > 0.1)
-//	         {
-//	           Prediction(0.05);
-//	           delta_t -= 0.05;
-//	         }
 
 	         Prediction(delta_t);
 	         UpdateRadar(meas_package);
@@ -337,13 +317,15 @@ void UKF::Prediction(double delta_t) {
   //Add v noise
   Xsig_aug = AugmentedSigmaPoints();
   //std::cout<<"Sigma augmented:\n"<<Xsig_aug<<"\n";
+
   //Predict sigma points.
   Xsig_pred_= SigmaPointPrediction(Xsig_aug, delta_t);
   //std::cout<<"X_sig_pred:\n"<<Xsig_pred_<<"\n";
-  //Calculate the mean and the covariance of the predicted state
 
+  //Calculate the mean and the covariance of the predicted state
   //create vector for predicted state
   VectorXd x_pred = VectorXd(5);
+
   //create vector for predicted covariance
   MatrixXd P_pred = MatrixXd(5, 5);
 
@@ -371,17 +353,9 @@ void UKF::Prediction(double delta_t) {
   for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //iterate over sigma points
     // state difference
     VectorXd x_diff = Xsig_pred_.col(i) - x_pred;
-
-    //float watch =x_diff(3);
-
     //angle normalization
 
-    //x_diff(3) =  x_diff(3) - 2*M_PI * int(x_diff(3)/2*M_PI);
     x_diff(3) = x_diff(3)- std::ceil(double((x_diff(3)-M_PI)/(2.*M_PI)))*2.*M_PI;
-    //while (x_diff(3)> M_PI) x_diff(3)-=2.*M_PI;
-    //while (x_diff(3)<-M_PI) x_diff(3)+=2.*M_PI;
-
-
     //std::cout<<x_diff(3)<<"\n";
 
     P_pred = P_pred + weights_(i) * x_diff * x_diff.transpose() ;
@@ -430,8 +404,6 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
     Zsig(1,i) = p_y ;  //py
 
   }
-
-
 
   //mean predicted measurement
   VectorXd z_pred = VectorXd(n_z);
