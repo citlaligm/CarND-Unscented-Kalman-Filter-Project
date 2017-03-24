@@ -122,7 +122,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 			x_(3) = 0.1;
 			x_(4) = 0.1;
 			time_us_ = meas_package.timestamp_;
-			std::cout<<"X_initial: \n"<<x_<<"\n";
+			//std::cout<<"X_initial: \n"<<x_<<"\n";
 
 
 		}
