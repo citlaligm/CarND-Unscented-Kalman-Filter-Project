@@ -91,10 +91,8 @@ UKF::~UKF() {}
  * either radar or laser.
  */
 void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
-  /**
-  TODO:
-
-  Complete this function! Make sure you switch between lidar and radar
+  /** 
+  Switch between lidar and radar
   measurements.
   */
 	if (!is_initialized_){
@@ -114,7 +112,6 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
 			x_(3) = 0.1;
 			x_(4) = 0.1;
 			time_us_ = meas_package.timestamp_;
-			//std::cout<<"X_initial: \n"<<x_<<"\n";
 
 
 		}
@@ -187,7 +184,6 @@ MatrixXd UKF::GenerateSigmaPoints() {
 
   }
 
-  //write result
   return Xsig;
 }
 
@@ -284,9 +280,7 @@ MatrixXd UKF::SigmaPointPrediction(MatrixXd Xsig_aug, double delta_t) {
     Xsig_pred(4,i) = yawd_p;
   }
 
-  //print result
 
-  //write result
   return Xsig_pred;
 
 }
@@ -301,9 +295,7 @@ MatrixXd UKF::SigmaPointPrediction(MatrixXd Xsig_aug, double delta_t) {
 
 void UKF::Prediction(double delta_t) {
   /**
-  TODO:
-
-  Complete this function! Estimate the object's location. Modify the state
+  Estimate the object's location. Modify the state
   vector, x_. Predict sigma points, the state, and the state covariance matrix.
   */
   //Obtain sigma points
@@ -312,15 +304,12 @@ void UKF::Prediction(double delta_t) {
 
   //Generate sigma points in the original state
   Xsig = GenerateSigmaPoints();
-  //std::cout<<"Sigma points: \n"<<Xsig<<"\n";
 
   //Add v noise
   Xsig_aug = AugmentedSigmaPoints();
-  //std::cout<<"Sigma augmented:\n"<<Xsig_aug<<"\n";
 
   //Predict sigma points.
   Xsig_pred_= SigmaPointPrediction(Xsig_aug, delta_t);
-  //std::cout<<"X_sig_pred:\n"<<Xsig_pred_<<"\n";
 
   //Calculate the mean and the covariance of the predicted state
   //create vector for predicted state
@@ -353,10 +342,9 @@ void UKF::Prediction(double delta_t) {
   for (int i = 0; i < 2 * n_aug_ + 1; i++) {  //iterate over sigma points
     // state difference
     VectorXd x_diff = Xsig_pred_.col(i) - x_pred;
+    
     //angle normalization
-
     x_diff(3) = x_diff(3)- std::ceil(double((x_diff(3)-M_PI)/(2.*M_PI)))*2.*M_PI;
-    //std::cout<<x_diff(3)<<"\n";
 
     P_pred = P_pred + weights_(i) * x_diff * x_diff.transpose() ;
 
@@ -366,9 +354,6 @@ void UKF::Prediction(double delta_t) {
   P_ = P_pred;
   x_ = x_pred;
 
-  //std::cout<<"x_predicted:\n"<<x_<<"\n";
-  //std::cout<<"P_predicted:\n"<<P_<<"\n";
-
   }
 
 
@@ -377,10 +362,7 @@ void UKF::Prediction(double delta_t) {
  * @param {MeasurementPackage} meas_package
  */
 void UKF::UpdateLidar(MeasurementPackage meas_package) {
-  /**
-  TODO:
-
-  Complete this function! Use lidar data to update the belief about the object's
+  /** Use lidar data to update the belief about the object's
   position. Modify the state vector, x_, and covariance, P_.
 
   You'll also need to calculate the lidar NIS.
@@ -460,18 +442,15 @@ void UKF::UpdateLidar(MeasurementPackage meas_package) {
  * @param {MeasurementPackage} meas_package
  */
 void UKF::UpdateRadar(MeasurementPackage meas_package) {
-  /**
-  TODO:
-
-  Complete this function! Use radar data to update the belief about the object's
+  /**Use radar data to update the belief about the object's
   position. Modify the state vector, x_, and covariance, P_.
 
   You'll also need to calculate the radar NIS.
   */
   //set measurement dimension, radar can measure r, phi, and r_dot
   int n_z = 3;
-  //std::cout<<"Radar";
-  //create matrix for sigma points in measurement space
+
+	//create matrix for sigma points in measurement space
   MatrixXd Zsig = MatrixXd(n_z, 2 * n_aug_ + 1);
 
   //define spreading parameter
@@ -514,7 +493,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
 
 
   }
-  	//std::cout<<"Z_sig:\n"<<Zsig <<"\n";
 
 
 
@@ -541,9 +519,6 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
             0, 0,std_radrd_*std_radrd_;
 
     S = S + R;
-    //std::cout<<"z_pred:\n"<<z_pred<<"\n";
-    //std::cout<<"S:\n"<<S<<"\n";
-
 
 
     //create matrix for cross correlation Tc
@@ -569,9 +544,7 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
     x_ = x_ + K*(meas_package.raw_measurements_-z_pred);
     P_ = P_ - K*S*K.transpose();
     NIS_radar_ = ((meas_package.raw_measurements_-z_pred).transpose())*S.inverse()*(meas_package.raw_measurements_-z_pred);
-    //std::cout<<"NIS:\n"<<NIS_radar_<<"\n";
-    //std::cout<<"x:\n"<<x_<<"\n";
-    //std::cout<<"P:\n"<<P_ <<"\n";
+
 
 
 
